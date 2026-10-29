@@ -1,0 +1,19 @@
+services:
+  vaptforge:
+    image: vaptforge:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VAPTFORGE_UID: ${VAPTFORGE_UID:-1000}
+        VAPTFORGE_GID: ${VAPTFORGE_GID:-1000}
+    init: true
+    user: "${VAPTFORGE_UID:-1000}:${VAPTFORGE_GID:-1000}"
+    working_dir: /app
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./out:/out
+    # Arguments passed to `docker compose run` replace this safe default.
+    command: ["--help"]

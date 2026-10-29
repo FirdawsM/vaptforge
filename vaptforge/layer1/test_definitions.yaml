@@ -1,0 +1,111 @@
+# Defines the WSTG checks VAPTforge runs; copy an existing entry to add a check.
+# check_type selects whether output is matched against a pattern or left for manual review.
+# {target} is replaced with the validated --target URL.
+# component and element use the attack_surface.py taxonomy for coverage reporting.
+
+tests:
+  - wstg_id: WSTG-INFO-02
+    name: Fingerprint Web Server
+    phase: 0
+    tool: whatweb
+    command: "whatweb {target}"
+    check_type: pattern_fail
+    fail_pattern: "(X-Powered-By|X-AspNet-Version|X-AspNetMvc-Version|Server\\[)"
+    caution: null
+    component: Infrastructure
+    element: Web server configs
+
+  - wstg_id: WSTG-INFO-03
+    name: Review Webserver Metafiles for Information Leakage
+    phase: 0
+    tool: curl
+    command: "curl -s {target}/robots.txt {target}/sitemap.xml"
+    check_type: manual_review
+    caution: null
+    component: Infrastructure
+    element: Default pages
+
+  - wstg_id: WSTG-INFO-05
+    name: Review Webpage Content for Information Leakage
+    phase: 0
+    tool: curl
+    command: "curl -s {target} | grep -iE 'key|secret|token|password'"
+    check_type: pattern_fail
+    fail_pattern: "(key|secret|token|password)"
+    caution: null
+    component: Frontend
+    element: DOM
+
+  - wstg_id: WSTG-CONF-02
+    name: Test Application Platform Configuration
+    phase: 1
+    tool: nikto
+    command: "nikto -h {target}"
+    check_type: manual_review
+    caution: "Read-only but noisy — may trip a WAF/IDS."
+    component: Infrastructure
+    element: Error messages
+
+  - wstg_id: WSTG-CONF-03
+    name: Test File Extensions Handling
+    phase: 1
+    tool: gobuster
+    command: "gobuster dir -u {target} -w /usr/share/wordlists/dirb/common.txt -q"
+    check_type: manual_review
+    caution: "Directory brute force — confirm scope/testing window before running against a live client target."
+    component: Infrastructure
+    element: Default pages
+
+  - wstg_id: WSTG-CONF-07
+    name: Test HTTP Strict Transport Security
+    phase: 1
+    tool: curl
+    command: "curl -s -I {target} | grep -i strict-transport"
+    check_type: pattern_pass
+    pass_pattern: "strict-transport-security"
+    caution: null
+    component: HTTP layer
+    element: Headers
+
+  - wstg_id: WSTG-CLNT-09
+    name: Testing for Clickjacking
+    phase: 2
+    tool: curl
+    command: "curl -s -I {target} | grep -i x-frame-options"
+    check_type: pattern_pass
+    pass_pattern: "x-frame-options"
+    caution: null
+    component: HTTP layer
+    element: Headers
+
+  - wstg_id: WSTG-CONF-06
+    name: Test HTTP Methods
+    phase: 3
+    tool: curl
+    command: "curl -s -X OPTIONS {target} -i"
+    check_type: manual_review
+    caution: "PUT/DELETE here can modify or destroy a real object. Only run against a disposable test record."
+    component: HTTP layer
+    element: Methods
+
+  # Phase 4 checks require written client sign-off and confirmation; commands use non-destructive probes only.
+
+  - wstg_id: WSTG-INPV-05
+    name: Testing for SQL Injection
+    phase: 4
+    tool: sqlmap
+    command: "sqlmap -u \"{target}/item?id=1\" --batch --level=2"
+    check_type: manual_review
+    caution: "sqlmap --dbs can dump the real database. This command probes only — confirm write authorization before ever running --dbs manually, and never run --dbs through this tool."
+    component: API endpoints
+    element: REST
+
+  - wstg_id: WSTG-ATHN-03
+    name: Testing for Weak Lock Out Mechanism
+    phase: 4
+    tool: hydra
+    command: "echo 'MANUAL: hydra -l <test_user> -P <small_wordlist> {target} http-post-form \"<form_path>:<form_fields>:<fail_string>\" -t 1'"
+    check_type: manual_review
+    caution: "Locks real accounts / alerts SOC. Use one throwaway test account, tell the client before running, and fill in the real form fields yourself — this tool will not guess them for you."
+    component: Authentication
+    element: Login forms

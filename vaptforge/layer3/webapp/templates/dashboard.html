@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · VAPTforge{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><p class="eyebrow">Assessment workspace</p><h1>Dashboard</h1><p class="subheading">Track assessment runs, execution health, and your next review.</p></div>
+    <a class="button primary" href="{{ url_for('web.new_assessment') }}"><span aria-hidden="true">＋</span> New assessment</a>
+  </div>
+
+  <section class="grid kpis" aria-label="Assessment counts">
+    <article class="panel kpi"><div class="kpi-label">Assessments</div><div class="kpi-value">{{ assessments|length }}</div><div class="kpi-detail">Saved on this host</div></article>
+    <article class="panel kpi"><div class="kpi-label">Running or queued</div><div class="kpi-value" style="color:var(--blue)">{{ counts.running + counts.queued }}</div><div class="kpi-detail">Execution in progress</div></article>
+    <article class="panel kpi"><div class="kpi-label">Completed</div><div class="kpi-value" style="color:var(--green)">{{ counts.done }}</div><div class="kpi-detail">Ready for operator review</div></article>
+    <article class="panel kpi"><div class="kpi-label">Needs attention</div><div class="kpi-value" style="color:var(--red)">{{ counts.failed }}</div><div class="kpi-detail">Failed runs remain visible</div></article>
+  </section>
+
+  <section class="grid columns">
+    <div class="panel" id="assessments">
+      <div class="panel-head"><div><h2>Recent scan runs</h2><div class="muted" style="font-size:12px;margin-top:4px">Tool execution jobs from this server session</div></div><a class="row-link" href="{{ url_for('web.assessments_page') }}">Assessment lifecycle →</a></div>
+      {% if jobs %}
+      <div class="table-wrap"><table><thead><tr><th>Target</th><th>Run status</th><th>Risk ceiling</th><th></th></tr></thead><tbody>
+        {% for job in jobs %}<tr><td><a class="row-link" href="{{ url_for('web.job_page', job_id=job.id) }}">{{ job.target }}</a></td><td><span class="status" data-state="{{ job.status }}">{{ job.status }}</span></td><td>Engine phase {{ job.max_phase }}</td><td><a class="row-link" href="{{ url_for('web.job_page', job_id=job.id) }}">Open →</a></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}
+      <div class="empty"><div class="check-symbol" style="width:42px;height:42px;margin:0 auto 12px;font-size:19px">＋</div><h2>No assessments yet</h2><p>Enter the target URL once to create an assessment and generate its available phase results.</p><a class="button primary" href="{{ url_for('web.assessment_setup') }}">Start an assessment</a></div>
+      {% endif %}
+    </div>
+
+    <aside class="grid" style="align-content:start">
+      <section class="panel"><div class="panel-head"><h2>Workflow overview</h2></div><div class="panel-body"><ul class="check-list">
+        <li><span class="check-symbol">1</span><span><strong>Pre-engagement</strong><br><span class="muted">Create an authorized assessment</span></span></li>
+        <li><span class="check-symbol">2–8</span><span><strong>Review generated phase results</strong><br><span class="muted">Available checks run once; unsupported steps are labeled clearly</span></span></li>
+      </ul><a class="row-link" style="display:inline-block;margin-top:16px" href="{{ url_for('web.assessments_page') }}">Open assessment lifecycle →</a></div></section>
+      <section class="panel"><div class="panel-head"><h2>Current build</h2><span class="status" data-state="done">Available</span></div><div class="panel-body"><p style="margin:0 0 10px;color:#c5d5e7">Saved assessment phases, individual HTML results, scan execution, and an all-in-one HTML report generator. The scanner also retains its JSON results and DOCX report.</p><p class="muted" style="margin:0;font-size:12px">The engine’s Phase 0–4 setting is a separate testing risk ceiling, not one of the eight lifecycle steps.</p></div></section>
+    </aside>
+  </section>
+{% endblock %}

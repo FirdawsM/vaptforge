@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Assessment run · VAPTforge{% endblock %}
+{% block breadcrumb %}<a class="row-link" href="{{ url_for('web.index') }}">Assessments</a> / Run{% endblock %}
+{% block content %}
+  <div class="page-heading" id="overview">
+    <div><p class="eyebrow">Assessment workspace · Execution</p><h1>Assessment run</h1><p class="subheading target">{{ job.target }}</p><div class="job-meta"><span class="meta-chip">Testing risk ceiling · Engine Phase {{ job.max_phase }}</span><span class="meta-chip">Run ID · {{ job.id[:12] }}</span></div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:flex-start"><a class="button secondary" href="{{ url_for('web.assessments_page') }}">← Assessment lifecycle</a><span class="status" id="status" data-state="{{ job.status }}">{{ job.status }}</span></div>
+  </div>
+
+  <section class="grid columns" style="grid-template-columns:minmax(0,1fr) 270px">
+    <div class="grid" style="align-content:start">
+      <section class="panel" id="execution">
+        <div class="panel-head"><div><h2>Execution monitor</h2><div class="muted" style="font-size:12px;margin-top:4px">Live output from the assessment runner</div></div><span class="muted" style="font-size:11px">Auto-refreshing</span></div>
+        <p id="error" class="error" role="alert" hidden style="margin:14px 17px 0"></p>
+        <pre id="log" aria-live="polite" aria-label="Live scan output">{% for line in job.logs %}{{ line }}
+{% endfor %}</pre>
+      </section>
+      <section class="panel" id="deliverables"><div class="panel-head"><div><h2>Review &amp; deliverables</h2><div class="muted" style="font-size:12px;margin-top:4px">Review generated phase pages and scanner evidence.</div></div></div><div class="panel-body" style="display:flex;flex-wrap:wrap;gap:10px"><a class="button secondary" id="raw-link" href="{{ url_for('web.raw', job_id=job.id) }}" aria-disabled="{{ 'false' if job.status == 'done' else 'true' }}">Download scan results · JSON</a><a class="button primary" id="report-link" href="{{ url_for('web.report', job_id=job.id) }}" aria-disabled="{{ 'false' if job.status == 'done' else 'true' }}">Generate &amp; download scan report · DOCX</a>{% if assessment %}<a class="button secondary" id="assessment-link" href="{{ url_for('web.assessment_page', assessment_id=assessment.id) }}" {% if job.status not in ['done','failed'] %}aria-disabled="true"{% endif %}>Review assessment phases →</a>{% endif %}</div></section>
+    </div>
+    <aside class="grid" style="align-content:start">
+      <section class="panel"><div class="panel-head"><h2>Run summary</h2></div><div class="panel-body"><ul class="check-list"><li><span class="check-symbol">1</span><span><strong>Scope configured</strong><br><span class="muted">Target and authorization submitted</span></span></li><li><span class="check-symbol">2–4</span><span><strong>Security checks</strong><br><span class="muted">Runner phase ceiling: {{ job.max_phase }}</span></span></li><li><span class="check-symbol">6</span><span><strong>Reporting</strong><br><span class="muted">Generate after reviewing results</span></span></li></ul></div></section>
+      <section class="panel"><div class="panel-head"><h2>Lifecycle phases</h2></div><div class="panel-body"><p class="muted" style="margin:0;font-size:12px">This UI currently supports scope setup, scan execution, raw-result download, and report generation. Retesting, closure, and the remaining lifecycle workflows are not implemented yet.</p></div></section>
+    </aside>
+  </section>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce }}">
+  const statusUrl = {{ url_for('web.job_status', job_id=job.id)|tojson }};
+  const statusElement = document.getElementById('status');
+  const logElement = document.getElementById('log');
+  const rawLink = document.getElementById('raw-link');
+  const reportLink = document.getElementById('report-link');
+  const errorElement = document.getElementById('error');
+  const assessmentLink = document.getElementById('assessment-link');
+  let cursor = {{ job.logs|length }};
+  async function refresh() {
+    try {
+      const response = await fetch(statusUrl, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Could not refresh assessment status.');
+      const data = await response.json();
+      statusElement.textContent = data.status;
+      statusElement.dataset.state = data.status;
+      for (const line of data.logs.slice(cursor)) logElement.append(document.createTextNode(line + '\n'));
+      cursor = data.logs.length;
+      if (data.error) { errorElement.hidden = false; errorElement.textContent = data.error; }
+      if (data.status === 'done') {
+        rawLink.setAttribute('aria-disabled', 'false');
+        reportLink.setAttribute('aria-disabled', 'false');
+        if (assessmentLink) assessmentLink.setAttribute('aria-disabled', 'false');
+        return;
+      }
+      if (data.status === 'failed') {
+        if (assessmentLink) assessmentLink.setAttribute('aria-disabled', 'false');
+        return;
+      }
+    } catch (error) {
+      errorElement.hidden = false;
+      errorElement.textContent = error.message;
+    }
+    window.setTimeout(refresh, 1200);
+  }
+  if (!['done', 'failed'].includes(statusElement.dataset.state)) refresh();
+</script>
+{% endblock %}

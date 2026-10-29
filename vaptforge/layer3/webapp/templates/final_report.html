@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VAPTforge assessment report · {{ assessment.target }}</title>
+  <style>
+    :root { color-scheme:light; --ink:#17243a; --muted:#596a82; --line:#d7e0eb; --panel:#fff; --bg:#f3f6fa; --blue:#1769aa; --green:#087b58; --amber:#936000; --red:#b42336; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.55 Inter,ui-sans-serif,system-ui,sans-serif; }
+    main { max-width:1120px; margin:0 auto; padding:38px 24px 64px; }
+    h1 { margin:0; font-size:30px; line-height:1.2; overflow-wrap:anywhere; }
+    h2 { margin:0; font-size:19px; }
+    h3 { margin:18px 0 8px; font-size:15px; }
+    p { margin:7px 0; }
+    .brand { color:var(--blue); font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+    .subtitle,.muted { color:var(--muted); }
+    .hero { border-bottom:2px solid var(--ink); padding-bottom:22px; margin-bottom:22px; }
+    .panel { margin:0 0 16px; border:1px solid var(--line); border-radius:10px; padding:18px; background:var(--panel); break-inside:avoid; }
+    .phase-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+    .badge { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:3px 9px; color:var(--muted); font-size:11px; font-weight:750; white-space:nowrap; }
+    .badge.done { color:var(--green); border-color:#a8d8c8; }
+    .badge.error { color:var(--red); border-color:#efb7c0; }
+    .badge.review { color:var(--amber); border-color:#ead39a; }
+    .scope { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 24px; }
+    .scope strong { display:block; font-size:12px; }
+    .scope span { display:block; color:var(--muted); white-space:pre-wrap; overflow-wrap:anywhere; }
+    .contents { display:flex; flex-wrap:wrap; gap:8px; margin-top:15px; }
+    .contents a { border:1px solid var(--line); border-radius:7px; padding:5px 9px; color:var(--blue); text-decoration:none; font-size:12px; }
+    .contents a:hover { background:#edf5fc; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; text-align:left; }
+    th { padding:9px; border-bottom:1px solid var(--line); color:var(--muted); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+    td { padding:10px 9px; border-bottom:1px solid #e8edf3; vertical-align:top; }
+    pre { max-height:360px; overflow:auto; margin:8px 0 0; border-radius:7px; padding:12px; background:#101c2b; color:#e7eff8; font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; overflow-wrap:anywhere; }
+    details summary { cursor:pointer; color:var(--blue); }
+    .result-pass { color:var(--green); font-weight:700; }
+    .result-error,.result-fail { color:var(--red); font-weight:700; }
+    .result-skipped,.result-review { color:var(--amber); font-weight:700; }
+    footer { margin-top:24px; border-top:1px solid var(--line); padding-top:14px; color:var(--muted); font-size:11px; }
+    @media(max-width:680px) { main { padding:22px 13px 40px; } .scope { grid-template-columns:1fr; } .phase-head { flex-direction:column; } }
+    @media print { body { background:#fff; } main { max-width:none; padding:0; } .panel { box-shadow:none; } .contents a { color:var(--ink); } details:not([open]) > *:not(summary) { display:block; } }
+  </style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div class="brand">VAPTforge · Security assessment report</div>
+    <h1>{{ assessment.target }}</h1>
+    <p class="subtitle">Assessment created {{ assessment.created_at[:10] }} · Run status: {{ assessment.status|replace('_',' ')|title }} · {{ scan_runs|length }} scan run(s)</p>
+  </header>
+
+  <section class="panel">
+    <h2>Engagement scope</h2>
+    <div class="scope" style="margin-top:14px">
+      {% for key,label in [('environment','Environment'),('approach','Testing approach'),('authorized_targets','Authorized targets'),('excluded_targets','Excluded systems'),('testing_window','Testing window'),('restrictions','Restrictions'),('technical_contact','Technical contact'),('emergency_contact','Emergency contact')] %}
+      <div><strong>{{ label }}</strong><span>{{ assessment.scope.get(key) or 'Not provided' }}</span></div>
+      {% endfor %}
+    </div>
+    <nav class="contents" aria-label="Report sections">{% for phase in phases %}<a href="#phase-{{ phase[0] }}">Phase {{ phase[0] }} · {{ phase[1] }}</a>{% endfor %}<a href="#scanner-output">Scanner output</a></nav>
+  </section>
+
+  {% for phase in phases %}
+    {% set record=assessment.phase_results.get(phase[0]|string) %}
+    <section class="panel" id="phase-{{ phase[0] }}">
+      <div class="phase-head"><h2>Phase {{ phase[0] }} · {{ phase[1] }}</h2><span class="badge {{ 'done' if record and record.status in ['completed','report_generated'] else 'error' if record and record.status in ['failed','interrupted'] else 'review' }}">{{ record.outcome if record else 'No result recorded' }}</span></div>
+      {% if record %}
+        <h3>Work performed and observations</h3><p style="white-space:pre-wrap">{{ record.notes or 'No notes recorded.' }}</p>
+        {% if record.evidence %}<h3>Evidence references</h3><p style="white-space:pre-wrap">{{ record.evidence }}</p>{% endif %}
+        {% if record.limitations %}<h3>Limitations and follow-up</h3><p style="white-space:pre-wrap">{{ record.limitations }}</p>{% endif %}
+        {% if record.tests %}<div class="table-wrap"><table><thead><tr><th>Check</th><th>Tool</th><th>Result</th><th>Details</th></tr></thead><tbody>{% for test in record.tests %}<tr><td>{{ test.wstg_id or test.id or 'Check' }}<br>{{ test.name or 'Unnamed check' }}</td><td>{{ test.tool or '—' }}</td><td class="{{ 'result-pass' if test.result == 'Pass' else 'result-error' if test.result in ['Error','Fail'] else 'result-skipped' if 'Skipped' in (test.result or '') else 'result-review' }}">{{ test.result or 'Unknown' }}</td><td>{{ test.note or '' }}{% if test.raw_output %}<details><summary>Captured output</summary><pre>{{ test.raw_output }}</pre></details>{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+      {% else %}<p class="muted">No result recorded for this phase.</p>{% endif %}
+    </section>
+  {% endfor %}
+
+  <section class="panel" id="scanner-output">
+    <h2>Scanner output and execution status</h2>
+    {% if scan_runs %}
+      {% for run in scan_runs %}
+        <h3>{{ run.target }} · {{ run.status|title }} · {{ run.saved_at[:10] }}</h3>
+        {% if run.error %}<p class="result-error">Runner error: {{ run.error }}</p>{% endif %}
+        {% if run.tests %}<div class="table-wrap"><table><thead><tr><th>Check</th><th>Tool</th><th>Result</th><th>Captured output</th></tr></thead><tbody>
+          {% for test in run.tests %}<tr><td>{{ test.wstg_id or test.id or 'Check' }}<br>{{ test.name or 'Unnamed check' }}</td><td>{{ test.tool or '—' }}</td><td class="{{ 'result-pass' if test.result == 'Pass' else 'result-error' if test.result in ['Error','Fail'] else 'result-skipped' if 'Skipped' in (test.result or '') else 'result-review' }}">{{ test.result or 'Unknown' }}</td><td>{{ test.note or '' }}{% if test.caution %}<p><strong>Caution:</strong> {{ test.caution }}</p>{% endif %}{% if test.raw_output %}<details><summary>Show raw output</summary><pre>{{ test.raw_output }}</pre></details>{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>{% endif %}
+        <details><summary>Runner log</summary><pre>{{ run.logs or 'No runner log saved.' }}</pre></details>
+      {% endfor %}
+    {% else %}<p class="muted">No scanner results have been linked to this assessment.</p>{% endif %}
+  </section>
+  <footer>Generated by VAPTforge. This standalone report contains its phase summaries and scanner output. It does not depend on a running VAPTforge server.</footer>
+</main>
+</body>
+</html>

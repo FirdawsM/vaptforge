@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Final report · VAPTforge{% endblock %}
+{% block breadcrumb %}<a class="row-link" href="{{ url_for('web.reports_page') }}">Reports</a> / Final report{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Final deliverable</p><h1>Generate assessment report</h1><p class="subheading">{{ assessment.target }} · scan {{ assessment.status|replace('_',' ') }}</p></div><a class="button secondary" href="{{ url_for('web.reports_page') }}">All reports</a></div>
+  <section class="panel"><div class="panel-head"><h2>Included in the combined report</h2></div><div class="panel-body"><div class="grid phase-grid">{% for phase_number in range(1,9) %}{% set record=assessment.phase_results.get(phase_number|string) %}<div class="meta-chip">Phase {{ phase_number }} · {% if record %}{{ record.outcome }}{% else %}Awaiting scan result{% endif %}</div>{% endfor %}</div><p class="muted" style="margin:18px 0 0;font-size:12px">The report includes generated phase summaries and linked scanner evidence. It labels skipped checks, errors, and workflow steps without configured automation. Output is standalone HTML; the scanner’s technical report remains DOCX.</p>
+    <form method="post" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:20px"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button primary" type="submit">{{ 'Regenerate' if report_exists else 'Generate' }} combined HTML report</button>{% if report_exists %}<a class="button secondary" href="{{ url_for('web.assessment_report_view', assessment_id=assessment.id) }}">Preview report</a><a class="button secondary" href="{{ url_for('web.download_assessment_report', assessment_id=assessment.id) }}">Download HTML</a>{% endif %}</form>
+  </div></section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Reports · VAPTforge{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">All-in-one deliverables</p><h1>Report generator</h1><p class="subheading">Combine the saved HTML results from each assessment phase into one final HTML report.</p></div></div>
+  <section class="panel"><div class="panel-head"><div><h2>Choose an assessment</h2><div class="muted" style="font-size:12px;margin-top:4px">The report includes completed phases and labels phases without a saved result.</div></div></div>
+    {% if assessments %}<div class="table-wrap"><table><thead><tr><th>Target</th><th>Run status</th><th>Phase result pages</th><th></th></tr></thead><tbody>{% for assessment in assessments %}<tr><td>{{ assessment.target }}</td><td>{{ assessment.status|replace('_',' ')|title }}</td><td>{{ assessment.phase_results|length }} generated; unconfigured steps remain labeled</td><td><a class="button secondary" href="{{ url_for('web.assessment_report', assessment_id=assessment.id) }}">Open generator →</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty"><h2>No assessment results to report</h2><p>Start an assessment to generate scan evidence and phase result pages.</p><a class="button primary" href="{{ url_for('web.assessment_setup') }}">Set up assessment</a></div>{% endif %}
+  </section>
+{% endblock %}

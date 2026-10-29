@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Assessment lifecycle · VAPTforge{% endblock %}
+{% block breadcrumb %}Assessment lifecycle{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Eight-phase workflow</p><h1>Assessment lifecycle</h1><p class="subheading">Open an assessment to review its generated phase pages. Start each assessment once from Assessment setup.</p></div><a class="button primary" href="{{ url_for('web.assessment_setup') }}">＋ New assessment</a></div>
+  <section class="panel">
+    <div class="panel-head"><div><h2>Your assessments</h2><div class="muted" style="font-size:12px;margin-top:4px">Assessment scope and phase results persist on this host.</div></div><span class="muted">{{ assessments|length }} total</span></div>
+    {% if assessments %}<div class="table-wrap"><table><thead><tr><th>Target</th><th>Environment</th><th>Progress</th><th>Created</th><th></th></tr></thead><tbody>
+      {% for assessment in assessments %}<tr><td><a class="row-link" href="{{ url_for('web.assessment_page', assessment_id=assessment.id) }}">{{ assessment.target }}</a><br><span class="assessment-id">{{ assessment.id[:12] }}</span></td><td>{{ assessment.scope.environment or '—' }}</td><td>{{ assessment.status|replace('_',' ')|title }} · {{ assessment.phase_results|length }} phase records</td><td>{{ assessment.created_at[:10] }}</td><td><a class="row-link" href="{{ url_for('web.assessment_page', assessment_id=assessment.id) }}">Open →</a></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty"><h2>No assessments created</h2><p>Enter one authorized target URL. VAPTforge will run its configured checks and save the phase results automatically.</p><a class="button primary" href="{{ url_for('web.assessment_setup') }}">Set up an assessment</a></div>{% endif %}
+  </section>
+{% endblock %}

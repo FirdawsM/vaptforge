@@ -1,0 +1,24 @@
+.git
+.gitignore
+.venv
+**/.venv
+**/__pycache__
+*.py[cod]
+*.swp
+*.swo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+instance
+out
+scan_results.json
+report.docx
+*.log
+*.zip
+WEB PENTEST
+Pictures
+Screenshots
+Desktop
+Downloads

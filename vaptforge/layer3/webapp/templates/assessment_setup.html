@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Assessment setup · VAPTforge{% endblock %}
+{% block breadcrumb %}Assessment setup{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">One target · One run</p><h1>Start an assessment</h1><p class="subheading">Enter the authorized target once. VAPTforge runs the configured low-risk checks and builds the phase results automatically.</p></div></div>
+  <div class="grid columns">
+    <form class="panel" action="{{ url_for('web.create_assessment_route') }}" method="post" style="padding:24px">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+      <div class="field"><label for="target">Target URL</label><input id="target" name="target" type="url" required autocomplete="url" placeholder="https://example.com" value="{{ values.get('target','') if values else '' }}"><p class="hint">One HTTP or HTTPS URL. The scan is limited to the selected target.</p></div>
+      <div class="form-footer"><span class="muted" style="font-size:12px">Starting confirms you have authorization to test this target. The default run does not include higher-risk checks.</span><button class="button primary" name="confirm_authorization" value="on" type="submit">Confirm authorization &amp; start →</button></div>
+    </form>
+    <aside class="grid" style="align-content:start">
+      <section class="panel"><div class="panel-head"><h2>What happens next</h2></div><div class="panel-body"><ul class="check-list"><li><span class="check-symbol">1</span><span>Run configured checks through the existing scanner.</span></li><li><span class="check-symbol">2</span><span>Save each lifecycle page and its HTML result automatically.</span></li><li><span class="check-symbol">3</span><span>Review the run, then generate one combined report from Reports.</span></li></ul></div></section>
+      <div class="phase-ceiling"><strong>Safe default</strong><br>The current scanner runs engine risk phases 0–2. Higher-risk checks remain skipped or gated. The engine risk phases are not the eight lifecycle phases.</div>
+    </aside>
+  </div>
+{% endblock %}

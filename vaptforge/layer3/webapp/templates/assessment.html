@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ assessment.target }} · Assessment lifecycle{% endblock %}
+{% block breadcrumb %}<a class="row-link" href="{{ url_for('web.assessments_page') }}">Assessments</a> / Overview{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Assessment workspace · Scan {{ assessment.status|replace('_',' ') }}</p><h1>{{ assessment.target }}</h1><p class="subheading">Eight phase pages are generated from the saved scope and scan output. Each page reports whether checks ran, were skipped, or are not automated.</p></div><div style="display:flex;flex-wrap:wrap;gap:9px"><a class="button secondary" href="{{ url_for('web.assessments_page') }}">← All assessments</a>{% if assessment.status not in ['starting','running'] and assessment.scope.authorization_confirmed %}<form method="post" action="{{ url_for('web.restart_assessment_scan', assessment_id=assessment.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button primary" type="submit">↻ Restart scan</button></form>{% endif %}</div></div>
+  {% if assessment.interruption_note %}<p class="error" role="status">Previous run interrupted: {{ assessment.interruption_note }} The saved authorized target is ready to retry.</p>{% endif %}
+  <div class="panel" style="padding:16px 18px;margin-bottom:18px"><strong>Scope authorization recorded</strong><p class="muted" style="margin:4px 0 0;font-size:12px">{{ assessment.scope.authorized_targets or assessment.target }}{% if assessment.scope.excluded_targets %} · Exclusions recorded{% endif %}</p></div>
+  <section class="grid phase-grid" aria-label="Assessment phases">
+    {% for phase in phases %}{% set phase_number=phase[0] %}{% set record=assessment.phase_results.get(phase_number|string) %}
+    <article class="panel phase-card"><div class="phase-number">{{ '%02d'|format(phase_number) }}</div><div class="phase-content"><h2>{{ phase[1] }}</h2><p>{{ phase[2] }}</p><div class="phase-actions">
+      {% if record %}<span class="phase-state">{{ record.outcome }} · result saved</span><a class="button secondary" href="{{ url_for('web.phase_result', assessment_id=assessment.id, phase_number=phase_number) }}">View result</a>
+      {% elif phase_number == assessment.current_phase %}<span class="phase-state">Current step</span><a class="button primary" href="{{ url_for('web.assessment_phase', assessment_id=assessment.id, phase_number=phase_number) }}">Open phase →</a>
+      {% else %}<span class="phase-state">Locked · complete the previous phase</span>{% endif %}
+    </div></div></article>{% endfor %}
+  </section>
+  <div style="margin-top:18px"><a class="button primary" href="{{ url_for('web.assessment_report', assessment_id=assessment.id) }}">Open final report generator →</a></div>
+{% endblock %}

@@ -1,0 +1,8 @@
+# Local Python environment and bytecode
+.venv/
+__pycache__/
+*.py[cod]
+
+# Runtime assessment data and generated scan outputs
+instance/*
+out/*
